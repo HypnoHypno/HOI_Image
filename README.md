@@ -27,3 +27,23 @@ When using a .exe version, you should set the default program for HOI files to y
 6. You're done!
 
 !["Open with" panel](/documentation/open_with_panel.png)
+
+# Issues:
+1. The HOI file is too big compared to other file formats.
+
+   This is due to the lack of compression. Each pixel in the image is encoded as 2 bytes, be patient! A compression system will be implemented in the next version, HOI_2.
+
+2. There's color banding, and colors can sometimes be slightly off.
+
+   This is due to the fact that there are only 16 different variations of each Red, Green, and Blue value, as opposed to the 256 variations.
+   This causes there to be 16^3 (4096) unique colors to use, which can get close to the original colors, but nearly never 100% accurate.
+
+   A fix for this will be made, in the form of having the 16 different activations be variable, and change depending on what is best for the image being encoded.
+   The activations will be added to the HOI file, allowing more accurate colors, and (hopefully) less color banding.
+
+3. Conversion to and from HOI takes a few seconds.
+
+   This is because conversion iterates over every pixel in the image, which can take some time.
+   On extremely large images, converting to and from HOI can take over 20 seconds, however it usually takes 1-5 seconds on lower sized images.
+
+   This is low priority at the moment.
