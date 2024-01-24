@@ -21,6 +21,8 @@ Alternatively, you can also drag a file into "main.exe" to use the last stable v
 When using a .exe version, you should set the default program for HOI files to your .exe file by:
 1. Right clicking on a HOI file.
 2. Hovering over "Open with".
-3. Clicking "Choose another app", checking "Always use this app", and scrolling down to the bottom.
-4. On the bottom, you'll see "Look for another app on this PC", click it and navigate to your exe file.
+3. Clicking "Choose another app", checking "Always use this app", and clicking "More apps".
+4. Scrolling to the bottom, where you'll see "Look for another app on this PC", clicking it and navigating to your exe file.
 5. You're done!
+
+!["Open with" panel](/open_with_panel.png)
