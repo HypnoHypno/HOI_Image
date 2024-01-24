@@ -31,7 +31,7 @@ When using a .exe version, you should set the default program for HOI files to y
 # Issues:
 1. The HOI file is too big compared to other file formats.
 
-   This is due to the lack of compression. Each pixel in the image is encoded as 2 bytes, be patient! A compression system will be implemented in the next version, HOI_2.
+   This is due to the lack of compression, each pixel in the image is encoded as 2 bytes. Be patient! A compression system will be implemented in the next version, HOI_2.
 
 2. There's color banding, and colors can sometimes be slightly off.
 
