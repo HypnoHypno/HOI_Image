@@ -16,7 +16,7 @@ Color-banding, accuracy, and size should improve as code is in the works to add 
 2. Run "main.py" with the path to your input image as an argument. (HOI or any other format to convert to HOI.)
 3. Wait until the conversion is done, this can take a few minutes if your image is large, but should take around half a minute.
 
-Alternatively, you can also drag a file into the executable file in "[main.rar](/main.rar)" to use the last stable version of HOI if you aren't risk averse to that sort of thing, or compile main.py yourself.
+Alternatively, you can also drag a file into the executable file in "main.rar" to use the last stable version of HOI if you aren't risk averse to that sort of thing, or compile main.py yourself.
 
 When using a .exe version, you should set the default program for HOI files to your .exe file by:
 1. Right clicking on a HOI file.
