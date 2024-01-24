@@ -12,7 +12,7 @@ The color-banding is due to a palette of 4096 colors being superimposed onto the
 Color-banding, accuracy, and size should improve as code is in the works to add a palette feature to HOI rather than forcing a set palette, and to add compression when pixels repeat, specifically.
 
 # How to use:
-1. Download this repo by [clicking this link](github.com/HypnoHypno/HOI_Image/zipball/master).
+1. Download this repo by [clicking this link](github.com/HypnoHypno/hoi/zipball/master).
 2. Run "main.py" with the path to your input image as an argument. (HOI or any other format to convert to HOI.)
 3. Wait until the conversion is done, this can take a few minutes if your image is large, but should take around half a minute.
 
