@@ -3,7 +3,7 @@ Stands for Hex Operating Image Format.
 
 Inspired by face-hh's "[bruh](https://github.com/face-hh/bruh)" format, I'm coding together a python-based image format which uses a byte-based format, as opposed to a dump of hex colors.
 
-![Example Image](/output.png)
+![Example Image](/documentation/output.png)
 
 This is an example image of 1 MB in size, made from converting a photo to HOI V1 and back to PNG. You can view the original [here](https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png).
 
@@ -26,4 +26,4 @@ When using a .exe version, you should set the default program for HOI files to y
 5. Double clicking the .exe file.
 6. You're done!
 
-!["Open with" panel](/open_with_panel.png)
+!["Open with" panel](/documentation/open_with_panel.png)
