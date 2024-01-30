@@ -1,6 +1,7 @@
 import argparse
 import numpy
 import binascii
+import os
 from PIL import Image, ImageColor
 
 # Errors
@@ -47,7 +48,7 @@ class Input:
         if ( version > 1 ):
             comp = self.IMAGE[:2]
             self.IMAGE = self.IMAGE[2:]
-            if ( comp == "ff" ): # This image is compressed, we should unpack it.
+            if ( comp == "01" ): # This image is compressed, we should unpack it.
                 i = 0
                 uncompressed = []
                 while i < len(self.IMAGE):
@@ -156,7 +157,7 @@ class Header:
         width = Width(width)
         height = Height(height)
         self.CONTENT = self.SIGNATURE_HEX[str(version)] + width if len(width) <= len(height) else height
-        self.CONTENT += "FF" if compression else "00"
+        self.CONTENT += "01" if compression else "00"
     
     def SignatureMatch(self, file):
         with open(file, "rb") as f:
@@ -256,7 +257,7 @@ if __name__ == '__main__':
         header = Header(width=image.WIDTH, height=image.HEIGHT, compression=compressedbool)
         out.SetHeader(header)
         out = out.Compile()
-        ext = args.input.split('.')[0] + ".hoi"
+        ext = os.path.splitext(args.input)[0] + ".hoi"
         with open(ext, "wb") as f:
             f.write(out)
     else: # Convert .hoi to .png
