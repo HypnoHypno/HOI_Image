@@ -7,16 +7,19 @@ from PIL import Image, ImageColor
 class HeaderError(Exception):
     __module__ = Exception.__module__
     MALFORMEDSIZE = "Malformed Image size, please ensure your file isn't corrupted."
+    MALFORMEDCOMP = "Malformed Compression byte, please ensure your file isn't corrupted."
 
 # Other Classes
+class Version:
+    LATEST = 2
+
 class SafeHex:
     def __init__(self, number=0):
         self.RESULT = "{:0x}".format(number)
-        return
 
 class Input:
     IMAGE, WIDTH, HEIGHT, TYPE = (None, None, None, None)
-    def __init__(self, file="input.jpg", mode=0):
+    def __init__(self, file="input.jpg", mode=0, version=Version.LATEST):
         if mode == 0:
             self.IMAGE = Image.open(file).convert('RGBA')
             self.WIDTH, self.HEIGHT = self.IMAGE.size
@@ -28,7 +31,7 @@ class Input:
             self.IMAGE = f.read()
         self.IMAGE = self.IMAGE.hex()
         
-        aftersignature = self.IMAGE[len(Header.SIGNATURE_HEX):]
+        aftersignature = self.IMAGE[len(Header.SIGNATURE_HEX[str(version-1)]):]
         
         size = self.GetHoiSize(aftersignature) # Tuple: (width or height, everything after size is specified)
         
@@ -40,12 +43,31 @@ class Input:
             raise HeaderError(HeaderError.MALFORMEDSIZE)
         
         self.IMAGE = size[1] # This is everything after the size is specified in byte based format.
-        databytes = int(len(self.IMAGE) / 4) # 2 bytes are used per pixel, which is 4 bits in hex.
+        
+        if ( version > 1 ):
+            comp = self.IMAGE[:2]
+            self.IMAGE = self.IMAGE[2:]
+            if ( comp == "ff" ): # This image is compressed, we should unpack it.
+                i = 0
+                uncompressed = []
+                while i < len(self.IMAGE):
+                    try:
+                        value = self.IMAGE[i:i+4]
+                        repeat = int(self.IMAGE[i+4:i+6], 16) + 1
+                        uncompressed.append(value * repeat)
+                        i += 6
+                    except:
+                        break
+                self.IMAGE = ''.join(uncompressed)
+            elif ( not comp == "00" ):
+                raise HeaderError(HeaderError.MALFORMEDCOMP)
+        
+        lenbytes = int(len(self.IMAGE) / 4) # 2 bytes are used per pixel, which is 4 bits in hex.
         
         if ( aftersignature[0] == "d" ): # If you get the total amount of pixels in an image and divide it by either the width or height, you will get the other metric in the image.
-            self.HEIGHT = int(databytes / self.WIDTH)
+            self.HEIGHT = int(lenbytes / self.WIDTH)
         else:
-            self.WIDTH = int(databytes / self.HEIGHT)
+            self.WIDTH = int(lenbytes / self.HEIGHT)
     
     def GetHoiSize(self, aftersignature):
         """
@@ -79,24 +101,27 @@ class Input:
         return self.ScanColorNormal() if not self.TYPE == "hoi" else self.ScanColorHoi(target)
     
     def ScanColorNormal(self):
-        data = list(self.IMAGE.getdata())
-        array = numpy.array(Palette.RGBA_Map)
-        outhex = ""
+        data = self.IMAGE.getdata()
+        rgba_map = numpy.array(Palette.RGBA_Map)
+        outhex = []
         outrgba = []
-        for t in data:
-            for v in t:
-                difference_array = numpy.absolute(array-v)
+        
+        for px in data:
+            for color in px:
+                difference_array = numpy.absolute(rgba_map-color)
                 index = difference_array.argmin()
-                outhex += Palette.BYTE_Map[index]
+                outhex.append(Palette.BYTE_Map[index])
                 outrgba.append(Palette.RGBA_Map[index])
+        
+        outhex = "".join(outhex)
+        
         while not len(outhex) % 2 == 0:
             outhex += "0"
+        
         return (outhex, outrgba)
     
     def ScanColorHoi(self, target):
         data = self.IMAGE
-        while not len(data) % 2 == 0:
-            data += "0"
         data = [*data]
         p_map = target.load()
         iteration = -1
@@ -109,12 +134,17 @@ class Input:
                     index = Palette.BYTE_Map.index(hex)
                     rgba.append(Palette.RGBA_Map[index])
                 p_map[x,y] = tuple(rgba)
-        pass
 
 class Header:
-    SIGNATURE_HEX = "484F495F3100" # HOI_1(null) in HEX
-    SIGNATURE_BYTES = b'HOI_1\x00'
-    def __init__(self, width=1280, height=720):
+    SIGNATURE_HEX = {
+        "1": "484F495F3100", # HOI_1[null]
+        "2": "484F495F3200"  # HOI_2[null]
+    }
+    SIGNATURE_BYTES = {
+        "1": b'HOI_1\x00',
+        "2": b'HOI_2\x00'
+    }
+    def __init__(self, width=1280, height=720, version=2, compression=True):
         def Width(width):
             out = "D" + str(width) + "D"
             return out + "0" if not len(out) % 2 == 0 else out
@@ -125,12 +155,19 @@ class Header:
         
         width = Width(width)
         height = Height(height)
-        self.CONTENT = self.SIGNATURE_HEX + width if len(width) <= len(height) else height
-        return
+        self.CONTENT = self.SIGNATURE_HEX[str(version)] + width if len(width) <= len(height) else height
+        self.CONTENT += "FF" if compression else "00"
     
     def SignatureMatch(self, file):
         with open(file, "rb") as f:
-            return f.read(6) == self.SIGNATURE_BYTES
+            read = f.read(6)
+            bytes = self.SIGNATURE_BYTES.values()
+            r1 = ( read in bytes )
+            try:
+                r2 = list(bytes).index(read)
+            except:
+                r2 = None
+            return (r1, r2)
 
 class Output:
     header = "00"
@@ -147,6 +184,35 @@ class Output:
             self.image_data = data
         except:
             self.image_data = data[0]
+    
+    def GetImageData(self):
+        return self.image_data
+
+    def GetHeader(self):
+        return self.header
+    
+    def CompressImageData(self):
+        # Convert hex string to a numpy array of integers
+        image_array = numpy.array([int(self.image_data[i:i+4], 16) for i in range(0, len(self.image_data), 4)], dtype=numpy.uint16)
+            
+        compressed = ""
+        index = 0
+        
+        while index < len(image_array):
+            current_pixel = image_array[index]
+        
+            # Count the number of consecutive pixels that are the same
+            repeat = 0
+            while repeat < 255 and index + repeat + 1 < len(image_array) and image_array[index + repeat + 1] == current_pixel:
+                repeat += 1
+            
+            # Append the compressed pixel to the result
+            compressed += format(current_pixel, '04x') + format(repeat, '02x')
+            
+            # Move the index to the next pixel
+            index += repeat + 1
+        
+        return compressed
     
     def Compile(self):
         compiled = self.header + self.image_data
@@ -165,7 +231,6 @@ class Palette:
             pluscount += 1
         RGBA_Map.append(i)
         BYTE_Map.append(SafeHex(pluscount-1).RESULT)
-    del pluscount
 
 # Main functionality
 if __name__ == '__main__':
@@ -173,19 +238,30 @@ if __name__ == '__main__':
     parser.add_argument('input', type=str, default='input.jpg')
     args = parser.parse_args()
     
-    mode = 1 if Header().SignatureMatch(file=args.input) else 0
-
+    signaturematch = Header().SignatureMatch(file=args.input)
+    
+    mode = 1 if signaturematch[0] else 0
+    
+    if signaturematch[0]:
+        hoiversion = signaturematch[1] + 1
+    
     if mode == 0: # Convert to .hoi
         out = Output()
         image = Input(args.input)
-        header = Header(image.WIDTH, image.HEIGHT)
-        out.SetHeader(header)
         out.SetImageData(image.ScanColor()[0])
+        compresseddata = out.CompressImageData()
+        compressedbool = (len(compresseddata) <= len(out.GetImageData()))
+        if compressedbool:
+            out.SetImageData(compresseddata)
+        header = Header(width=image.WIDTH, height=image.HEIGHT, compression=compressedbool)
+        out.SetHeader(header)
         out = out.Compile()
-        with open("output.hoi", "wb") as f:
+        ext = args.input.split('.')[0] + ".hoi"
+        with open(ext, "wb") as f:
             f.write(out)
     else: # Convert .hoi to .png
-        image = Input(args.input, 1)
+        image = Input(args.input, mode=1, version=hoiversion)
         out = Image.new('RGBA', (image.WIDTH, image.HEIGHT), (0, 0, 0, 0))
         image.ScanColor(out) # Works differently on .hoi files, you specify a target image and it'll draw every pixel on it.
-        out.save("output.png")
+        out.save(args.input + ".png")
+        out.show()
