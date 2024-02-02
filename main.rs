@@ -1,3 +1,5 @@
+mod handleargs; // Import handleargs.rs
+
 use std::env::args; // Will let us use args() to get all arguments sent.
 
 fn main() {
@@ -5,12 +7,13 @@ fn main() {
 	// We then run .collect() on it to gather it's elements.
 	// Using Vec<_> specifies we want a Vector.
 	let vec_args: Vec<_> = args().collect();
-	match vec_args.len()-1 { // By default there's always 1 argument, we don't consider this when counting here.
-		1 => {
-			println!("{:?}", vec_args[1])
+	let vec_args_length = vec_args.len() - 1; // By default there's always 1 argument, we don't consider this when counting here.
+	match vec_args_length {
+		1 | 2 => {
+			handleargs::handle_args(vec_args, vec_args_length)
 		},
-		_ => {
-			help()
+		_ => { // If the amount of arguments passed is 0 or >2.
+			help();
 		}
 	}
 }
